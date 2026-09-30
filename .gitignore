@@ -8,4 +8,9 @@ __pycache__/
 cache.sqlite3
 data/index/
 *.md
+!README.md
+!HOW_TO_RUN.md
+!ARCHITECTURE.md
+!API.md
+!SUBMISSION.md
 context/
