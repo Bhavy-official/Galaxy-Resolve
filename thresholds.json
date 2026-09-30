@@ -1,0 +1,6 @@
+{
+  "hit_threshold": 0.9,
+  "borderline_low": 0.7,
+  "ce_hit_threshold": 0.4,
+  "dl_threshold": 0.856
+}

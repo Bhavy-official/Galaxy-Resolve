@@ -1,0 +1,108 @@
+{
+  "retrieval": [
+    {
+      "variant": "BM25 only",
+      "accuracy": 0.25
+    },
+    {
+      "variant": "Dense only (MiniLM)",
+      "accuracy": 0.6875
+    },
+    {
+      "variant": "Hybrid RRF (BM25 + dense)",
+      "accuracy": 0.4375
+    },
+    {
+      "variant": "RRF + cross-encoder rerank",
+      "accuracy": 0.6875
+    },
+    {
+      "variant": "+ leaf specificity + key precision + direction (no threshold)",
+      "accuracy": 0.875
+    },
+    {
+      "variant": "Full (with confidence threshold -> dummy_positive / null)",
+      "accuracy": 1.0
+    }
+  ],
+  "cache": [
+    {
+      "variant": "Full (multi-vector + normalization + slot guard + cross-encoder)",
+      "hit_rate": 0.975,
+      "exact_row": 0.825,
+      "acceptable_hit_rate": 0.95,
+      "wrong_hit_rate": 0.025,
+      "negative_false_hit_rate": 0.0,
+      "n_pos": 40,
+      "n_neg": 10
+    },
+    {
+      "variant": "No slot guard",
+      "hit_rate": 0.975,
+      "exact_row": 0.825,
+      "acceptable_hit_rate": 0.95,
+      "wrong_hit_rate": 0.025,
+      "negative_false_hit_rate": 0.0,
+      "n_pos": 40,
+      "n_neg": 10
+    },
+    {
+      "variant": "No cross-encoder (embedding threshold only)",
+      "hit_rate": 0.05,
+      "exact_row": 0.05,
+      "acceptable_hit_rate": 0.05,
+      "wrong_hit_rate": 0.0,
+      "negative_false_hit_rate": 0.0,
+      "n_pos": 40,
+      "n_neg": 10
+    },
+    {
+      "variant": "No slot guard, embedding threshold 0.70",
+      "hit_rate": 1.0,
+      "exact_row": 0.85,
+      "acceptable_hit_rate": 0.95,
+      "wrong_hit_rate": 0.05,
+      "negative_false_hit_rate": 0.0,
+      "n_pos": 40,
+      "n_neg": 10
+    },
+    {
+      "variant": "Single vector per plan (no paraphrases)",
+      "hit_rate": 0.475,
+      "exact_row": 0.475,
+      "acceptable_hit_rate": 0.475,
+      "wrong_hit_rate": 0.0,
+      "negative_false_hit_rate": 0.0,
+      "n_pos": 40,
+      "n_neg": 10
+    },
+    {
+      "variant": "No query-side brand/model normalization",
+      "hit_rate": 0.975,
+      "exact_row": 0.85,
+      "acceptable_hit_rate": 0.95,
+      "wrong_hit_rate": 0.025,
+      "negative_false_hit_rate": 0.0,
+      "n_pos": 40,
+      "n_neg": 10
+    }
+  ],
+  "pipeline": [
+    {
+      "variant": "Rules only (no LLM)",
+      "fully_compliant": "20/20",
+      "violations": 0,
+      "p50_ms": 404,
+      "p95_ms": 3282,
+      "cost_usd_per_query": 0.0
+    },
+    {
+      "variant": "Hybrid (LLM extract/enrich + code) - production",
+      "note": "n/a: set GEMINI_API_KEY"
+    },
+    {
+      "variant": "Full-LLM (LLM writes whole plan)",
+      "note": "n/a: set GEMINI_API_KEY"
+    }
+  ]
+}

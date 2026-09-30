@@ -1,0 +1,238 @@
+{
+  "generated_at": "2026-09-28 21:03",
+  "mode": "rules",
+  "llm_model": "none (no GEMINI_API_KEY)",
+  "compliance": {
+    "responses": 20,
+    "schema_errors": 0,
+    "url_leaks": 0,
+    "violations": [],
+    "actions": 68,
+    "categories": {
+      "auto": 6,
+      "manual": 52,
+      "critical": 10
+    },
+    "deeplinks": {
+      "null": 66,
+      "catalog": 4,
+      "dummy_positive": 4
+    },
+    "fallbacks": {
+      "none": 20
+    }
+  },
+  "deeplinks": {
+    "accuracy": 1.0,
+    "n": 16,
+    "cases": [
+      {
+        "name": "touch sensitivity off",
+        "expect": [
+          "DL-0125"
+        ],
+        "got": "DL-0125",
+        "best": "DL-0125",
+        "conf": 1.0,
+        "ok": true
+      },
+      {
+        "name": "touch sensitivity on",
+        "expect": [
+          "DL-0126"
+        ],
+        "got": "DL-0126",
+        "best": "DL-0126",
+        "conf": 1.0,
+        "ok": true
+      },
+      {
+        "name": "navigation bar (leaf over Display)",
+        "expect": [
+          "DL-0169"
+        ],
+        "got": "DL-0169",
+        "best": "DL-0169",
+        "conf": 0.952,
+        "ok": true
+      },
+      {
+        "name": "wifi",
+        "expect": [
+          "DL-0313",
+          "DL-0574"
+        ],
+        "got": "DL-0313",
+        "best": "DL-0313",
+        "conf": 0.972,
+        "ok": true
+      },
+      {
+        "name": "swipe for split screen",
+        "expect": [
+          "DL-0270"
+        ],
+        "got": "DL-0270",
+        "best": "DL-0270",
+        "conf": 1.0,
+        "ok": true
+      },
+      {
+        "name": "screen timeout",
+        "expect": [
+          "DL-0220"
+        ],
+        "got": "DL-0220",
+        "best": "DL-0220",
+        "conf": 1.0,
+        "ok": true
+      },
+      {
+        "name": "back up data",
+        "expect": [
+          "DL-0542"
+        ],
+        "got": "DL-0542",
+        "best": "DL-0542",
+        "conf": 1.0,
+        "ok": true
+      },
+      {
+        "name": "screen mode",
+        "expect": [
+          "DL-0215"
+        ],
+        "got": "DL-0215",
+        "best": "DL-0215",
+        "conf": 1.0,
+        "ok": true
+      },
+      {
+        "name": "brightness",
+        "expect": [
+          "DL-0232",
+          "DL-0496"
+        ],
+        "got": "DL-0232",
+        "best": "DL-0232",
+        "conf": 0.998,
+        "ok": true
+      },
+      {
+        "name": "power saving on",
+        "expect": [
+          "DL-0412"
+        ],
+        "got": "DL-0412",
+        "best": "DL-0412",
+        "conf": 1.0,
+        "ok": true
+      },
+      {
+        "name": "eye comfort shield on",
+        "expect": [
+          "DL-0040"
+        ],
+        "got": "DL-0040",
+        "best": "DL-0040",
+        "conf": 1.0,
+        "ok": true
+      },
+      {
+        "name": "motion smoothness",
+        "expect": [
+          "DL-0228"
+        ],
+        "got": "DL-0228",
+        "best": "DL-0228",
+        "conf": 0.998,
+        "ok": true
+      },
+      {
+        "name": "mobile data on",
+        "expect": [
+          "DL-0082"
+        ],
+        "got": "DL-0082",
+        "best": "DL-0082",
+        "conf": 0.953,
+        "ok": true
+      },
+      {
+        "name": "clear app cache (not in catalog)",
+        "expect": [
+          "dummy"
+        ],
+        "got": "dummy",
+        "best": "DL-0131",
+        "conf": 0.36,
+        "ok": true
+      },
+      {
+        "name": "factory data reset (not in catalog)",
+        "expect": [
+          "dummy"
+        ],
+        "got": "dummy",
+        "best": "DL-0022",
+        "conf": 0.759,
+        "ok": true
+      },
+      {
+        "name": "physical restart (no screen)",
+        "expect": [
+          "none"
+        ],
+        "got": "none",
+        "best": null,
+        "conf": 0.0,
+        "ok": true
+      }
+    ]
+  },
+  "cache": {
+    "thresholds": {
+      "hit_threshold": 0.9,
+      "borderline_low": 0.7,
+      "ce_hit_threshold": 0.4,
+      "slot_guard": true
+    },
+    "all": {
+      "hit_rate": 0.975,
+      "exact_row": 0.825,
+      "acceptable_hit_rate": 0.95,
+      "wrong_hit_rate": 0.025,
+      "negative_false_hit_rate": 0.0,
+      "n_pos": 40,
+      "n_neg": 10
+    },
+    "held_out": {
+      "hit_rate": 0.95,
+      "exact_row": 0.75,
+      "acceptable_hit_rate": 0.9,
+      "wrong_hit_rate": 0.05,
+      "negative_false_hit_rate": 0.0,
+      "n_pos": 20,
+      "n_neg": 5
+    },
+    "cached_plans": 20,
+    "cached_vectors": 223
+  },
+  "latency": {
+    "hit_requests": 177,
+    "hit_p50_ms": 94.5,
+    "hit_p95_ms": 195.7,
+    "hit_server_p95_ms": 193.4,
+    "miss_requests": 20,
+    "miss_p50_ms": 628.2,
+    "miss_p95_ms": 3467.8
+  },
+  "gates": {
+    "schema.py validation on every response": true,
+    "zero URL leaks": true,
+    "zero rule violations (incl. catalog integrity)": true,
+    "cache-hit P95 ≤ 300 ms": true,
+    "new-query P95 ≤ 8000 ms": true,
+    "no false cache hits on negatives": true
+  }
+}

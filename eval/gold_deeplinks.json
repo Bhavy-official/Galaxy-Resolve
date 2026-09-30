@@ -1,0 +1,18 @@
+[
+  {"name": "touch sensitivity off", "steps": ["Navigate to Settings.", "Tap Display.", "Tap the switch next to Touch sensitivity to disable it."], "expect": ["DL-0125"]},
+  {"name": "touch sensitivity on", "steps": ["Go to Settings.", "Tap Display.", "Tap the switch next to Touch sensitivity."], "direction": "on", "expect": ["DL-0126"]},
+  {"name": "navigation bar (leaf over Display)", "steps": ["Go to Settings.", "Tap Display.", "Tap Navigation bar.", "Select Buttons to turn off full screen gestures."], "expect": ["DL-0169"]},
+  {"name": "wifi", "steps": ["Go to Settings.", "Tap Connections.", "Tap Wi-Fi."], "expect": ["DL-0313", "DL-0574"]},
+  {"name": "swipe for split screen", "steps": ["Navigate to and open Settings.", "Tap Advanced features.", "Tap Multi window.", "Tap the switches next to Swipe for split screen."], "direction": "on", "expect": ["DL-0270"]},
+  {"name": "screen timeout", "steps": ["From Settings, search for and select Screen timeout.", "Adjust the settings so your phone stays on for longer."], "expect": ["DL-0220"]},
+  {"name": "back up data", "steps": ["Navigate to and open Settings.", "Tap on Accounts and backup.", "Select Back up data to secure your personal files."], "direction": "on", "expect": ["DL-0542"]},
+  {"name": "screen mode", "steps": ["Open Settings.", "Tap Display.", "Tap Screen mode."], "expect": ["DL-0215"]},
+  {"name": "brightness", "steps": ["Open Settings.", "Tap Display.", "Adjust Brightness."], "expect": ["DL-0232", "DL-0496"]},
+  {"name": "power saving on", "steps": ["Open Settings.", "Tap Battery.", "Tap the switch next to Power saving."], "direction": "on", "expect": ["DL-0412"]},
+  {"name": "eye comfort shield on", "steps": ["Open Settings.", "Tap Display.", "Tap the switch next to Eye comfort shield."], "direction": "on", "expect": ["DL-0040"]},
+  {"name": "motion smoothness", "steps": ["Open Settings.", "Tap Display.", "Tap Motion smoothness."], "expect": ["DL-0228"]},
+  {"name": "mobile data on", "steps": ["Open Settings.", "Tap Connections.", "Tap Data usage.", "Tap the switch next to Mobile data."], "direction": "on", "expect": ["DL-0082"]},
+  {"name": "clear app cache (not in catalog)", "steps": ["Navigate to Settings.", "Tap Apps.", "Select your email app.", "Tap Storage.", "Tap Clear cache."], "expect": ["dummy"]},
+  {"name": "factory data reset (not in catalog)", "steps": ["Navigate to and open Settings.", "Tap General management.", "Tap Reset.", "Tap Factory data reset."], "expect": ["dummy"]},
+  {"name": "physical restart (no screen)", "steps": ["Press and hold the Power button.", "Tap Restart."], "expect": ["none"]}
+]
