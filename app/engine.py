@@ -106,7 +106,13 @@ class Engine:
         content = (siis or {}).get("content") or ""
         if not content.strip():
             return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_siis_context")
+        
+        from app.pipeline.mismatch import is_mismatched_article
+        if is_mismatched_article(query, content, (siis or {}).get("title") or ""):
+            return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_match")
+
         resp, info = self.generate(query, siis or {})
+
         if write_cache and resp["contexts"] and not info["violations"]:
             self._write_cache(query, resp, info)
         return self._respond(resp, t0, cache_hit=False, **info["meta"])
