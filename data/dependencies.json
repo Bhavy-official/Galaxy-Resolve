@@ -1,0 +1,9 @@
+{
+  "_readme": "Prerequisite edges for the action orderer: 'before' must come before 'after'.",
+  "edges": [
+    {"before": "backup", "after": "factory reset"},
+    {"before": "safe mode", "after": "uninstall in safe mode"},
+    {"before": "safe mode", "after": "in safe mode"},
+    {"before": "charge", "after": "force restart"}
+  ]
+}
