@@ -32,6 +32,8 @@ def clean_content(content: str) -> str:
     return _PREFIX.sub("", content or "", count=1)
 
 
+
+
 def clean_heading(title: str) -> str:
     title = re.sub(r"^(?:step\s*\d+\s*[:.)-]\s*|\d+\s*[.)-]\s*)", "", title.strip(), flags=re.I)
     return title.strip(" :#")
@@ -101,14 +103,18 @@ def _starts_imperative(text: str) -> bool:
     return w in IMPERATIVE_VERBS and not re.match(r"^(touch|press|set|use|access|check)\w*\s+(is|are|was|will)\b", text, re.I)
 
 
+from app.pipeline.deglue import deglue
+
+
 def to_imperative(sentence: str) -> Optional[str]:
     """Return an imperative step derived from `sentence`, or None if it is not an instruction."""
     s = normalize_ws(sentence)
+    if any(len(w) > 25 for w in s.split()):
+        s = deglue(s)
     words = s.split()
     if len(words) < 2 or len(words) > MAX_STEP_WORDS or _NOT_STEP.search(s) or _FILLER.search(s):
         return None
-    if any(len(w) > 25 for w in words):  # scraped run-ons like "enteryourcurrentpin,passwordorpattern"
-        return None
+
     s = _LEAD.sub("", s)
     s = _LETS.sub("", s)
     # "Label: Do something" -> keep conditional labels ("On devices with a Power button"), drop the rest.
