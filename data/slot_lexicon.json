@@ -1,0 +1,5 @@
+{
+  "_readme": "Deterministic slots for the cache guard. Add synonyms freely; keep values lowercase.",
+  "component": {"screen": ["screen", "display"], "battery": ["battery", "charge", "charging"]},
+  "symptom": {"black": ["black", "blank"], "cracked": ["cracked", "broken", "shattered"]}
+}

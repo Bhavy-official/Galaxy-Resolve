@@ -1,0 +1,56 @@
+{
+  "query": "The mobile phone screen is cracked and flashes intermittently.",
+  "response": {
+    "contexts": [
+      {
+        "goal": "Follow these steps to perform this Screen Damage Troubleshooting",
+        "title": "Screen display damage",
+        "score": 0.95,
+        "actions": [
+          {
+            "actionName": "Back Up Phone Data",
+            "description": "It will facilitate secure data transfer between your devices",
+            "stepGroups": [
+              {
+                "steps": [
+                  "Navigate to and open Settings.",
+                  "Tap on Accounts and backup.",
+                  "Select Back up data to secure your personal files."
+                ],
+                "actionableDeeplink": {
+                  "deeplink": "bixby://masked/act/b3ed3ed663",
+                  "description": "Enables data backup to Samsung Cloud via device Settings on the device.",
+                  "message": "Enable Back up data (Samsung Cloud)",
+                  "originalType": "onURL"
+                },
+                "validationDeeplink": {
+                  "deeplink": "bixby://masked/val/266037d0c5",
+                  "key": "Back up data (Samsung Cloud)",
+                  "resultType": "boolean",
+                  "condition": "equal",
+                  "value": "True"
+                }
+              }
+            ],
+            "category": "auto"
+          },
+          {
+            "actionName": "Schedule Screen Repair Service",
+            "description": "It will help you locate the nearest Samsung service center and schedule",
+            "stepGroups": [
+              {
+                "steps": [
+                  "Contact Samsung Support or visit an authorized Samsung Service Center.",
+                  "Provide device details regarding the peeling film and green display lines to initiate service."
+                ],
+                "actionableDeeplink": null,
+                "validationDeeplink": null
+              }
+            ],
+            "category": "manual"
+          }
+        ]
+      }
+    ]
+  }
+}
