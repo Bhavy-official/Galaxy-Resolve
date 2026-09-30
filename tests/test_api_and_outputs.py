@@ -81,3 +81,19 @@ def test_results_jsonl_is_clean(catalog):
     for line in text.splitlines():
         rec = json.loads(line)
         assert compliance.violations(rec["response"], catalog.all_uris) == [], rec["id"]
+
+
+def test_results_jsonl_has_query_variations():
+    # Official scoring: 5 pts for 8-10 unique, diverse variations per query.
+    path = ROOT / "results.jsonl"
+    if not path.exists():
+        pytest.skip("run scripts/prewarm.py first")
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) >= 20, "results.jsonl should cover all provided queries"
+    for line in lines:
+        rec = json.loads(line)
+        vs = rec.get("query_variations")
+        assert isinstance(vs, list) and 8 <= len(vs) <= 10, rec["id"]
+        assert len(set(vs)) == len(vs), f"duplicate variations in {rec['id']}"
+        assert rec["query"] not in vs, f"original query listed as variation in {rec['id']}"
+        assert all(isinstance(v, str) and v.strip() for v in vs), rec["id"]

@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import settings  # noqa: E402
 from app.engine import Engine  # noqa: E402
+from app.pipeline.enrich import rules_enrich  # noqa: E402
 
 
 def load_rows() -> list[dict]:
@@ -37,7 +38,10 @@ def main() -> None:
         for row in rows:
             q = row["original_query"]
             resp = engine.troubleshoot(q, row.get("siis_response"), use_cache=False)
-            f.write(json.dumps({"id": row["id"], "query": q, "response": resp}, ensure_ascii=False) + "\n")
+            # 8-10 deterministic, diverse variations per query (official scoring: 5 pts)
+            variations = rules_enrich(q, (row.get("siis_response") or {}).get("title", "")).paraphrases
+            f.write(json.dumps({"id": row["id"], "query": q, "query_variations": variations,
+                                "response": resp}, ensure_ascii=False) + "\n")
             m = resp["meta"]
             n = sum(len(g["actions"]) for g in resp["contexts"])
             print(f"{row['id']:<7} actions={n} fallback={m['fallback']} model={m['model']} "
