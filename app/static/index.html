@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galaxy Resolve — Smart Guided Troubleshooting Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --panel-bg: rgba(22, 29, 45, 0.75);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-blue: #2A7BFF;
+            --accent-glow: rgba(42, 123, 255, 0.35);
+            --text-primary: #F0F4FC;
+            --text-muted: #8E9BAE;
+            --badge-auto: #10B981;
+            --badge-manual: #3B82F6;
+            --badge-critical: #EF4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; padding: 20px; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 1280px; margin: 0 auto 24px; padding: 16px 24px;
+            background: var(--panel-bg); backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color); border-radius: 16px;
+        }
+
+        .logo { font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #FFF, var(--accent-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .badge { background: rgba(42, 123, 255, 0.15); color: var(--accent-blue); padding: 4px 12px; border-radius: 20px; font-size: 12px; border: 1px solid rgba(42, 123, 255, 0.3); }
+
+        .container { display: grid; grid-template-columns: 1fr 420px; gap: 24px; max-width: 1280px; margin: 0 auto; }
+
+        .card {
+            background: var(--panel-bg); backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color); border-radius: 20px; padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; }
+        textarea, input {
+            width: 100%; padding: 14px 16px; background: rgba(10, 15, 26, 0.6);
+            border: 1px solid var(--border-color); border-radius: 12px; color: #FFF;
+            font-size: 14px; outline: none; transition: 0.2s;
+        }
+        textarea:focus, input:focus { border-color: var(--accent-blue); box-shadow: 0 0 12px var(--accent-glow); }
+
+        .controls { display: flex; gap: 12px; }
+        button {
+            flex: 1; padding: 14px; background: linear-gradient(135deg, #2A7BFF, #1456C8);
+            border: none; border-radius: 12px; color: white; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; box-shadow: 0 4px 16px var(--accent-glow);
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--accent-glow); }
+
+        /* Real-Time Trace */
+        .trace-box {
+            margin-top: 20px; background: #050811; border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 16px; font-family: monospace; font-size: 13px;
+            max-height: 180px; overflow-y: auto; color: #A0AEC0;
+        }
+        .trace-step { margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .trace-step.active { color: #60A5FA; font-weight: bold; }
+        .trace-step.success { color: #34D399; }
+
+        /* Simulated Galaxy Device Frame */
+        .phone-frame {
+            width: 100%; height: 680px; background: #000; border: 4px solid #222;
+            border-radius: 40px; padding: 16px; display: flex; flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 0 10px rgba(255,255,255,0.1);
+            position: relative; overflow: hidden;
+        }
+        .phone-notch { width: 120px; height: 18px; background: #111; border-radius: 0 0 12px 12px; margin: 0 auto 12px; }
+        .phone-screen { flex: 1; background: #0D111A; border-radius: 28px; padding: 16px; overflow-y: auto; }
+
+        .action-item {
+            background: rgba(30, 40, 60, 0.7); border: 1px solid var(--border-color);
+            border-radius: 14px; padding: 14px; margin-bottom: 12px; transition: transform 0.2s;
+        }
+        .action-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .action-title { font-weight: 600; font-size: 14px; }
+        .category-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; }
+        .cat-auto { background: rgba(16, 185, 129, 0.2); color: var(--badge-auto); border: 1px solid var(--badge-auto); }
+        .cat-manual { background: rgba(59, 130, 246, 0.2); color: var(--badge-manual); border: 1px solid var(--badge-manual); }
+        .cat-critical { background: rgba(239, 68, 68, 0.2); color: var(--badge-critical); border: 1px solid var(--badge-critical); }
+
+        .deeplink-btn {
+            display: inline-block; width: 100%; margin-top: 10px; padding: 8px 12px;
+            background: rgba(42, 123, 255, 0.2); border: 1px solid var(--accent-blue);
+            color: #60A5FA; text-align: center; border-radius: 8px; font-size: 12px;
+            font-weight: 600; text-decoration: none; cursor: pointer; transition: 0.2s;
+        }
+        .deeplink-btn:hover { background: var(--accent-blue); color: white; }
+
+        /* Toast notification */
+        .toast {
+            position: fixed; bottom: 20px; right: 20px; background: #10B981; color: white;
+            padding: 12px 20px; border-radius: 10px; font-size: 14px; display: none; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">Galaxy Resolve <span>⚡</span></div>
+    <div class="badge">Theme 2: Smart Guided Troubleshooting Engine</div>
+</header>
+
+<div class="container">
+    <!-- Left Column: Controls & Visualizer -->
+    <div class="card">
+        <h2>Troubleshoot Query</h2>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Enter a vague Galaxy complaint to trigger single-shot engine resolution.</p>
+
+        <div class="input-group">
+            <label>Device Complaint Query</label>
+            <input type="text" id="queryInput" value="Battery draining fast when playing games" placeholder="e.g. My screen flickers after unlocking">
+        </div>
+
+        <div class="input-group">
+            <label>SIIS Context Document (Optional)</label>
+            <textarea id="siisInput" rows="3" placeholder="Paste Samsung Support Article text here..."></textarea>
+        </div>
+
+        <div class="controls">
+            <button id="runBtn" onclick="runTroubleshoot()">Troubleshoot (Single-Shot)</button>
+        </div>
+
+        <h3 style="margin-top: 24px; font-size: 14px; color: var(--text-muted);">Real-Time Execution Trace (SSE)</h3>
+        <div class="trace-box" id="traceBox">
+            <div class="trace-step">Ready for input...</div>
+        </div>
+    </div>
+
+    <!-- Right Column: Simulated Galaxy Smartphone -->
+    <div class="card" style="padding: 16px;">
+        <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-screen" id="phoneScreen">
+                <div style="text-align: center; margin-top: 100px; color: var(--text-muted);">
+                    <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    <p style="font-size: 13px; margin-top: 12px;">Run a query to generate guided actions inside Galaxy Smart Support.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast">Deep link opened: voiceassist://...</div>
+
+<script>
+    async function runTroubleshoot() {
+        const query = document.getElementById('queryInput').value;
+        const siis = document.getElementById('siisInput').value;
+        const traceBox = document.getElementById('traceBox');
+        const phoneScreen = document.getElementById('phoneScreen');
+
+        traceBox.innerHTML = '';
+        phoneScreen.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin-top: 100px;">Analyzing complaint...</p>';
+
+        const response = await fetch('/v1/troubleshoot/stream', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query, siis_response: siis ? { content: siis } : null })
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const text = decoder.decode(value);
+            const lines = text.split('\n');
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = JSON.parse(line.replace('data: ', ''));
+                    if (data.stage === 'completed') {
+                        renderPlan(data.result);
+                    } else {
+                        addTrace(data.message, data.stage === 'cache_hit');
+                    }
+                }
+            }
+        }
+    }
+
+    function addTrace(msg, isCacheHit) {
+        const traceBox = document.getElementById('traceBox');
+        const step = document.createElement('div');
+        step.className = `trace-step ${isCacheHit ? 'success' : 'active'}`;
+        step.innerText = `> ${msg}`;
+        traceBox.appendChild(step);
+        traceBox.scrollTop = traceBox.scrollHeight;
+    }
+
+    function renderPlan(res) {
+        const phoneScreen = document.getElementById('phoneScreen');
+        phoneScreen.innerHTML = '';
+
+        const meta = res.meta || {};
+        const header = document.createElement('div');
+        header.style.marginBottom = '16px';
+        header.innerHTML = `
+            <h4 style="font-size: 15px; font-weight: 700;">Smart Resolution Plan</h4>
+            <p style="font-size: 11px; color: var(--text-muted);">Latency: ${meta.latency_ms ? meta.latency_ms.toFixed(0) : 0}ms | Cache: ${meta.cache_hit ? 'HIT' : 'MISS'}</p>
+        `;
+        phoneScreen.appendChild(header);
+
+        const contexts = res.contexts || [];
+        if (contexts.length === 0) {
+            phoneScreen.innerHTML += '<p style="color: #EF4444; font-size: 13px;">No grounded actions found for this issue.</p>';
+            return;
+        }
+
+        contexts.forEach(ctx => {
+            (ctx.actions || []).forEach(action => {
+                const card = document.createElement('div');
+                card.className = 'action-item';
+                const catClass = `cat-${action.category || 'manual'}`;
+
+                let stepsList = (action.steps || []).map(s => `<li style="margin-left: 16px; font-size: 12px; margin-top: 4px;">${s}</li>`).join('');
+                let dlBtn = '';
+                const dl = action.actionableDeeplink || {};
+                if (dl.deeplink) {
+                    dlBtn = `<div class="deeplink-btn" onclick="openDeeplink('${dl.deeplink}')">⚡ Open Setting (${dl.deeplink.substring(0, 22)}...)</div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="action-header">
+                        <span class="action-title">${action.actionName}</span>
+                        <span class="category-badge ${catClass}">${action.category}</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted);">${action.description}</p>
+                    <ul style="color: #CBD5E1;">${stepsList}</ul>
+                    ${dlBtn}
+                `;
+                phoneScreen.appendChild(card);
+            });
+        });
+    }
+
+    function openDeeplink(uri) {
+        const toast = document.getElementById('toast');
+        toast.innerText = `Simulated Setting Launch: ${uri}`;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+</script>
+</body>
+</html>
