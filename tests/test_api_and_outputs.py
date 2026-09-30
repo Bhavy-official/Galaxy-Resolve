@@ -60,6 +60,26 @@ def test_index_dashboard(client):
     assert "Galaxy Resolve" in r.text
 
 
+def test_metrics_and_trace(client):
+    # Run a troubleshoot request
+    post_res = client.post("/v1/troubleshoot", json={"query": "battery drain fast", "siis_response": "Tap Settings. Tap Battery."})
+    assert post_res.status_code == 200
+    trace_id = post_res.json().get("meta", {}).get("trace_id")
+    assert trace_id is not None
+
+    # Check metrics
+    m = client.get("/v1/metrics").json()
+    assert m["total_requests"] >= 1
+    assert "latency_p50_ms" in m
+    assert "latency_p95_ms" in m
+
+    # Check trace
+    t = client.get(f"/v1/trace/{trace_id}").json()
+    assert t["id"] == trace_id
+    assert "query" in t
+
+
+
 
 SAMPLES = sorted((ROOT / "data" / "samples").glob("*.json"))
 

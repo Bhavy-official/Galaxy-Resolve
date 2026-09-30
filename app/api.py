@@ -48,9 +48,17 @@ def index():
     return "<h1>Galaxy Resolve API</h1><p>Visit /health or /docs</p>"
 
 
+from collections import deque
+import uuid
+import time
+from typing import Any
+
+_METRICS_WINDOW = 1000
+_TRACES: deque[dict[str, Any]] = deque(maxlen=_METRICS_WINDOW)
+
+
 @app.get("/health")
 def health() -> JSONResponse:
-
     ok = engine.ready
     body = {
         "status": "ok" if ok else "loading",
@@ -59,8 +67,47 @@ def health() -> JSONResponse:
         "cache": engine.store is not None,
         "cached_plans": engine.store.n_plans if engine.store else 0,
         "llm": engine.use_llm,
+        "total_requests": len(_TRACES),
     }
     return JSONResponse(body, status_code=200 if ok else 503)
+
+
+@app.get("/v1/metrics")
+def metrics() -> JSONResponse:
+    traces = list(_TRACES)
+    n = len(traces)
+    if n == 0:
+        return JSONResponse({
+            "total_requests": 0,
+            "cache_hit_rate": 0.0,
+            "latency_p50_ms": 0.0,
+            "latency_p95_ms": 0.0,
+            "avg_cost_usd": 0.0,
+            "traces": []
+        })
+
+    hits = sum(1 for t in traces if t.get("cache_hit"))
+    latencies = sorted(t.get("latency_ms", 0.0) for t in traces)
+    p50 = latencies[int(n * 0.50)]
+    p95 = latencies[min(n - 1, int(n * 0.95))]
+    avg_cost = sum(t.get("cost_usd", 0.0) for t in traces) / n
+
+    return JSONResponse({
+        "total_requests": n,
+        "cache_hit_rate": round(hits / n, 4),
+        "latency_p50_ms": round(p50, 1),
+        "latency_p95_ms": round(p95, 1),
+        "avg_cost_usd": round(avg_cost, 6),
+        "recent_traces": traces[-15:]
+    })
+
+
+@app.get("/v1/trace/{trace_id}")
+def get_trace(trace_id: str) -> JSONResponse:
+    for t in _TRACES:
+        if t.get("id") == trace_id:
+            return JSONResponse(t)
+    return JSONResponse({"error": "trace not found"}, status_code=404)
 
 
 @app.post("/v1/troubleshoot")
@@ -69,7 +116,23 @@ def troubleshoot(req: TroubleshootRequest) -> JSONResponse:
     if isinstance(siis, str):
         siis = SiisResponse(content=siis)
     result = engine.troubleshoot(req.query, siis.model_dump() if siis else None)
+
+    meta = result.get("meta", {})
+    trace_id = str(uuid.uuid4())[:8]
+    _TRACES.append({
+        "id": trace_id,
+        "timestamp": time.time(),
+        "query": req.query,
+        "latency_ms": meta.get("latency_ms", 0.0),
+        "cache_hit": meta.get("cache_hit", False),
+        "model": meta.get("model", "unknown"),
+        "cost_usd": meta.get("cost_usd", 0.0),
+        "fallback": meta.get("fallback"),
+        "actions_count": sum(len(c.get("actions", [])) for c in result.get("contexts", [])),
+    })
+    result.setdefault("meta", {})["trace_id"] = trace_id
     return JSONResponse(result)
+
 
 
 @app.post("/v1/troubleshoot/stream")
