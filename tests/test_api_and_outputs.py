@@ -45,6 +45,22 @@ def test_siis_as_plain_string_and_missing(client):
     assert r["contexts"] == [] and r["meta"]["fallback"] == "no_siis_context"
 
 
+def test_troubleshoot_stream(client):
+    r = client.post("/v1/troubleshoot/stream", json={"query": "screen flickers"})
+    assert r.status_code == 200
+    assert "text/event-stream" in r.headers.get("content-type", "")
+    assert "normalize" in r.text
+    assert "completed" in r.text
+
+
+def test_index_dashboard(client):
+    r = client.get("/")
+    assert r.status_code == 200
+    assert "text/html" in r.headers.get("content-type", "")
+    assert "Galaxy Resolve" in r.text
+
+
+
 SAMPLES = sorted((ROOT / "data" / "samples").glob("*.json"))
 
 

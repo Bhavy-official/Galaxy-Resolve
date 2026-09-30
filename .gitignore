@@ -8,3 +8,4 @@ __pycache__/
 cache.sqlite3
 data/index/
 *.md
+context/
