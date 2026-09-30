@@ -34,7 +34,9 @@ class LocalModels:
             torch.set_num_threads(max(1, min(4, os.cpu_count() or 1)))
             self.embedder = SentenceTransformer(self.cfg.embed_model, device="cpu")
             self.reranker = CrossEncoder(self.cfg.rerank_model, device="cpu")
-            self.paraphrase_ce = CrossEncoder(self.cfg.paraphrase_ce_model, device="cpu")
+            self.paraphrase_ce = CrossEncoder(
+                self.cfg.paraphrase_ce_model, device="cpu", tokenizer_args={"use_fast": False}
+            )
             self.encode(["warmup"])
             self.rerank([("warmup", "warmup")])
             self.paraphrase_score([("warmup", "warmup")])
