@@ -155,47 +155,70 @@
 <div class="toast" id="toast">Deep link opened: voiceassist://...</div>
 
 <script>
+    let _sseBuffer = '';  // accumulates partial SSE chunks
+
     async function runTroubleshoot() {
-        const query = document.getElementById('queryInput').value;
-        const siis = document.getElementById('siisInput').value;
-        const traceBox = document.getElementById('traceBox');
+        const query = document.getElementById('queryInput').value.trim();
+        const siis  = document.getElementById('siisInput').value.trim();
+        const traceBox    = document.getElementById('traceBox');
         const phoneScreen = document.getElementById('phoneScreen');
 
-        traceBox.innerHTML = '';
-        phoneScreen.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin-top: 100px;">Analyzing complaint...</p>';
+        if (!query) { alert('Please enter a complaint query.'); return; }
 
-        const response = await fetch('/v1/troubleshoot/stream', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: query, siis_response: siis ? { content: siis } : null })
-        });
+        traceBox.innerHTML    = '';
+        phoneScreen.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin-top: 100px;">Analyzing complaint…</p>';
+        _sseBuffer = '';
 
-        const reader = response.body.getReader();
+        let response;
+        try {
+            response = await fetch('/v1/troubleshoot/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, siis_response: siis ? { content: siis } : null })
+            });
+        } catch (err) {
+            addTrace('❌ Network error — is the server running?', false);
+            return;
+        }
+
+        if (!response.ok) {
+            addTrace(`❌ Server error ${response.status}`, false);
+            return;
+        }
+
+        const reader  = response.body.getReader();
         const decoder = new TextDecoder();
 
         while (true) {
             const { value, done } = await reader.read();
             if (done) break;
-            const text = decoder.decode(value);
-            const lines = text.split('\n');
+
+            // Append to buffer; split on newlines preserving partial tail
+            _sseBuffer += decoder.decode(value, { stream: true });
+            const lines = _sseBuffer.split('\n');
+            _sseBuffer  = lines.pop();          // last element may be incomplete
 
             for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const data = JSON.parse(line.replace('data: ', ''));
+                if (!line.startsWith('data: ')) continue;
+                try {
+                    const data = JSON.parse(line.slice(6));   // strip "data: "
                     if (data.stage === 'completed') {
+                        addTrace('✅ Stream complete — rendering plan.', true);
                         renderPlan(data.result);
-                    } else {
+                    } else if (data.message) {
                         addTrace(data.message, data.stage === 'cache_hit');
                     }
+                } catch (_) {
+                    // Malformed JSON in one chunk — skip silently
                 }
             }
         }
     }
 
-    function addTrace(msg, isCacheHit) {
+    function addTrace(msg, isSuccess) {
         const traceBox = document.getElementById('traceBox');
         const step = document.createElement('div');
-        step.className = `trace-step ${isCacheHit ? 'success' : 'active'}`;
+        step.className = `trace-step ${isSuccess ? 'success' : 'active'}`;
         step.innerText = `> ${msg}`;
         traceBox.appendChild(step);
         traceBox.scrollTop = traceBox.scrollHeight;
@@ -206,40 +229,67 @@
         phoneScreen.innerHTML = '';
 
         const meta = res.meta || {};
+        const fallback = meta.fallback;
+
         const header = document.createElement('div');
         header.style.marginBottom = '16px';
         header.innerHTML = `
-            <h4 style="font-size: 15px; font-weight: 700;">Smart Resolution Plan</h4>
-            <p style="font-size: 11px; color: var(--text-muted);">Latency: ${meta.latency_ms ? meta.latency_ms.toFixed(0) : 0}ms | Cache: ${meta.cache_hit ? 'HIT' : 'MISS'}</p>
+            <h4 style="font-size:15px;font-weight:700;">Smart Resolution Plan</h4>
+            <p style="font-size:11px;color:var(--text-muted);">
+                Latency: ${meta.latency_ms != null ? meta.latency_ms.toFixed(0) : '—'}ms &nbsp;|&nbsp;
+                Cache: ${meta.cache_hit ? '✅ HIT' : '❌ MISS'} &nbsp;|&nbsp;
+                Model: ${meta.model || '—'}
+            </p>
         `;
         phoneScreen.appendChild(header);
 
         const contexts = res.contexts || [];
         if (contexts.length === 0) {
-            phoneScreen.innerHTML += '<p style="color: #EF4444; font-size: 13px;">No grounded actions found for this issue.</p>';
+            const reason = fallback === 'no_siis_context'
+                ? 'No SIIS context provided — paste a Samsung Support article to enable full resolution.'
+                : fallback === 'no_match'
+                ? 'Engine could not find grounded actions for this query in the provided article.'
+                : 'No actions returned. Try a different query or provide more context.';
+            phoneScreen.innerHTML += `<p style="color:#EF4444;font-size:13px;margin-top:8px;">${reason}</p>`;
             return;
         }
 
         contexts.forEach(ctx => {
+            // Show context goal/title banner
+            if (ctx.goal || ctx.title) {
+                const banner = document.createElement('div');
+                banner.style.cssText = 'margin-bottom:12px;padding:10px 14px;background:rgba(42,123,255,0.1);border-radius:10px;border:1px solid rgba(42,123,255,0.25);';
+                banner.innerHTML = `<span style="font-size:13px;font-weight:600;color:#60A5FA;">${ctx.title || ctx.goal}</span>
+                    <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:2px;">Confidence: ${ctx.score != null ? (ctx.score * 100).toFixed(0) + '%' : '—'}</span>`;
+                phoneScreen.appendChild(banner);
+            }
+
             (ctx.actions || []).forEach(action => {
                 const card = document.createElement('div');
                 card.className = 'action-item';
-                const catClass = `cat-${action.category || 'manual'}`;
+                const cat      = action.category || 'manual';
+                const catClass = `cat-${cat}`;
 
-                let stepsList = (action.steps || []).map(s => `<li style="margin-left: 16px; font-size: 12px; margin-top: 4px;">${s}</li>`).join('');
-                let dlBtn = '';
-                const dl = action.actionableDeeplink || {};
-                if (dl.deeplink) {
-                    dlBtn = `<div class="deeplink-btn" onclick="openDeeplink('${dl.deeplink}')">⚡ Open Setting (${dl.deeplink.substring(0, 22)}...)</div>`;
-                }
+                // Flatten steps from all stepGroups
+                const allSteps = (action.stepGroups || []).flatMap(g => g.steps || []);
+                const stepsList = allSteps.map(s =>
+                    `<li style="margin-left:16px;font-size:12px;margin-top:4px;">${s}</li>`
+                ).join('');
+
+                // First deeplink found across all stepGroups
+                const dlGroup = (action.stepGroups || []).find(g => g.actionableDeeplink?.deeplink);
+                const dl      = dlGroup?.actionableDeeplink || {};
+                const dlBtn   = dl.deeplink
+                    ? `<div class="deeplink-btn" onclick="openDeeplink('${dl.deeplink}')">⚡ Open Setting (${dl.deeplink.substring(0, 28)}…)</div>`
+                    : '';
 
                 card.innerHTML = `
                     <div class="action-header">
-                        <span class="action-title">${action.actionName}</span>
-                        <span class="category-badge ${catClass}">${action.category}</span>
+                        <span class="action-title">${action.actionName || 'Unnamed Action'}</span>
+                        <span class="category-badge ${catClass}">${cat}</span>
                     </div>
-                    <p style="font-size: 12px; color: var(--text-muted);">${action.description}</p>
-                    <ul style="color: #CBD5E1;">${stepsList}</ul>
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${action.description || ''}</p>
+                    <ul style="color:#CBD5E1;">${stepsList || '<li style="margin-left:16px;font-size:12px;color:var(--text-muted);">No steps listed.</li>'}</ul>
                     ${dlBtn}
                 `;
                 phoneScreen.appendChild(card);
