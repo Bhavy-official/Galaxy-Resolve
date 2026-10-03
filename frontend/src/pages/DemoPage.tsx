@@ -388,11 +388,35 @@ function ScenarioSection({ onRun, loading }: { onRun: (s: Scenario) => void; loa
   )
 }
 
+// ─── Keyword-based SIIS auto-matcher ─────────────────────────────────────────
+
+const SIIS_CATALOG: Array<{ keywords: string[]; article: string; label: string }> = [
+  { keywords: ['battery', 'drain', 'charge', 'power', 'thermal', 'hot', 'heat', 'warm'], article: SIIS_BATTERY, label: 'Battery & Power' },
+  { keywords: ['screen', 'flicker', 'display', 'blank', 'black', 'bright', 'dim', 'blink', 'refresh'], article: SIIS_DISPLAY, label: 'Display & Screen' },
+  { keywords: ['camera', 'photo', 'blurry', 'blur', 'dark', 'low light', 'picture', 'focus', 'lens'], article: SIIS_CAMERA, label: 'Camera' },
+  { keywords: ['slow', 'lag', 'performance', 'sluggish', 'freeze', 'hang', 'ram', 'memory', 'speed'], article: SIIS_PERF, label: 'Performance' },
+  { keywords: ['swipe', 'gesture', 'navigation', 'gesture bar', 'back gesture'], article: SIIS_GESTURE, label: 'Gestures & Navigation' },
+  { keywords: ['floating', 'circle', 'ball', 'assistive', 'one-hand', 'one hand', 'bubble'], article: SIIS_FLOATING, label: 'Floating Circle / Assistive Touch' },
+  { keywords: ['dead', 'wont turn', "won't turn", 'not turning', 'not on', "can't turn", 'cant turn', 'unresponsive', 'boot', 'ded', 'fone'], article: SIIS_DEAD, label: "Phone Won't Turn On" },
+]
+
+function autoMatchSiis(q: string): { article: string; label: string } | null {
+  const lower = q.toLowerCase()
+  let bestScore = 0
+  let bestMatch: { article: string; label: string } | null = null
+  for (const entry of SIIS_CATALOG) {
+    const score = entry.keywords.filter(k => lower.includes(k)).length
+    if (score > bestScore) { bestScore = score; bestMatch = entry }
+  }
+  return bestScore > 0 ? bestMatch : null
+}
+
 // ─── Main Demo Page ───────────────────────────────────────────────────────────
 
 export function DemoPage() {
   const [query, setQuery] = useState('')
   const [siis, setSiis] = useState('')
+  const [autoSiisLabel, setAutoSiisLabel] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [goals, setGoals] = useState<Goal[]>([])
   const [stages, setStages] = useState<TraceStage[]>(initialStages)
@@ -456,7 +480,22 @@ export function DemoPage() {
     setStages(initialStages())
     setLines([])
 
-    const siisPayload = selectedSiis.trim() ? { content: selectedSiis.trim() } : null
+    // Auto-match a SIIS article when the user typed a custom query without providing one
+    let effectiveSiis = selectedSiis.trim()
+    if (!effectiveSiis) {
+      const match = autoMatchSiis(trimmed)
+      if (match) {
+        effectiveSiis = match.article
+        setSiis(match.article)
+        setAutoSiisLabel(match.label)
+      } else {
+        setAutoSiisLabel(null)
+      }
+    } else {
+      setAutoSiisLabel(null)
+    }
+
+    const siisPayload = effectiveSiis ? { content: effectiveSiis } : null
 
     try {
       const res = await fetch('/v1/troubleshoot/stream', {
@@ -558,13 +597,17 @@ export function DemoPage() {
             />
             <details style={{ marginTop: '10px' }}>
               <summary style={{ fontSize: '12px', color: 'var(--color-muted, #8fa3b8)', cursor: 'pointer', userSelect: 'none', marginBottom: '6px' }}>
-                SIIS Context Article <span style={{ opacity: 0.6 }}>(Samsung Support article text — required for full resolution)</span>
+                SIIS Context Article
+                {autoSiisLabel
+                  ? <span style={{ marginLeft: '6px', color: '#34d399', fontWeight: 600 }}>✓ Auto-matched: {autoSiisLabel}</span>
+                  : <span style={{ opacity: 0.6 }}> (auto-matched from query, or paste your own)</span>
+                }
               </summary>
               <textarea
                 id="siis-input"
                 value={siis}
-                onChange={e => setSiis(e.target.value)}
-                placeholder="Paste a Samsung Support article here... (selecting a scenario auto-fills this)"
+                onChange={e => { setSiis(e.target.value); setAutoSiisLabel(null) }}
+                placeholder="Paste a Samsung Support article here... or type a query and the engine will auto-match one."
                 rows={5}
                 style={{ marginTop: '6px', fontSize: '12px', opacity: 0.85 }}
               />
