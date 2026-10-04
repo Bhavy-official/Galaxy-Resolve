@@ -110,13 +110,16 @@ class Engine:
                 return self._respond(plan.plan, t0, cache_hit=True, model=plan.model, similarity=sim)
         content = (siis or {}).get("content") or ""
         if not content.strip():
-            # Caller did not supply siis_response (optional per spec).
-            # Auto-lookup the best matching article from the official SIIS knowledge base.
-            auto = self.siis_store.lookup(query, self.models) if self.siis_store.ready else None
-            if auto:
-                siis = auto
-                content = auto["content"]
-                log.info("Auto-matched SIIS article %r for query %r", auto.get("title"), query[:60])
+            if siis is None:
+                # Caller did not supply siis_response (optional per spec).
+                # Auto-lookup the best matching article from the official SIIS knowledge base.
+                auto = self.siis_store.lookup(query, self.models) if self.siis_store.ready else None
+                if auto:
+                    siis = auto
+                    content = auto["content"]
+                    log.info("Auto-matched SIIS article %r for query %r", auto.get("title"), query[:60])
+                else:
+                    return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_siis_context")
             else:
                 return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_siis_context")
 

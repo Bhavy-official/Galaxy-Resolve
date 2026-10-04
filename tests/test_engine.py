@@ -122,7 +122,7 @@ def test_rules_mode_all_provided_queries_are_compliant(make_engine, siis_rows):
 
 def test_fallbacks(make_engine):
     eng, _ = make_engine(None, mode="rules")
-    r = eng.troubleshoot("screen is black", None)
+    r = eng.troubleshoot("screen is black", {})
     assert r == {"contexts": [], "meta": r["meta"]} and r["meta"]["fallback"] == "no_siis_context"
     r = eng.troubleshoot("screen is black", {"title": "Pixels", "content": "Pixels are tiny dots that make up the display."})
     assert r["contexts"] == [] and r["meta"]["fallback"] == "no_match"

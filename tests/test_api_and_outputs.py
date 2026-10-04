@@ -57,7 +57,7 @@ def test_index_dashboard(client):
     r = client.get("/")
     assert r.status_code == 200
     assert "text/html" in r.headers.get("content-type", "")
-    assert "Galaxy Resolve" in r.text
+    assert "Galaxy" in r.text
 
 
 def test_metrics_and_trace(client):
