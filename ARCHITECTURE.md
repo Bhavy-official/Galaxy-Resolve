@@ -151,3 +151,43 @@ Galaxy Resolve adheres to the **"LLM proposes, code disposes"** doctrine:
 * **Server-Sent Events (SSE):** `POST /v1/troubleshoot/stream` streams live stage events (`normalize`, `cache_hit`, `llm_enrich`, `grounding`, `deeplink_catalog`, `completed`) to the web visualizer.
 * **In-Memory Rolling Deque:** Maintains the last 1,000 requests, calculating real-time P50 and P95 latencies, cache hit rates, and request costs exposed at `GET /v1/metrics`.
 * **Per-Request Tracing:** Assigns unique 8-character trace IDs accessible at `GET /v1/trace/{trace_id}`.
+
+### 3.9 SIIS Knowledge Store & Auto-Matching (`app/siis_store.py`)
+
+The Theme 2 specification defines `siis_response` as **optional** in the API contract:
+
+```json
+POST /v1/troubleshoot
+{
+  "query": "phone swipe gestures wrong direction after app install",
+  "siis_response": "<optional raw text context>"
+}
+```
+
+Two execution paths exist depending on whether `siis_response` is provided:
+
+| Caller Scenario | `siis_response` in request | Engine behaviour |
+|---|---|---|
+| **Scorer / evaluator** | Provided (from `siis_responses.json`) | Engine uses caller content directly — highest priority |
+| **Frontend demo** | Omitted | `SIISStore` auto-matches the best article via cosine similarity |
+| **Unknown query** | Omitted, no match found | Returns `contexts: []` with `fallback: "no_siis_context"` |
+
+**SIISStore implementation:**
+* Loads all 20 Samsung support articles from `data/siis_responses.json` at startup.
+* Pre-embeds the original query for each article using `all-MiniLM-L6-v2`.
+* On lookup: encodes the incoming query, computes cosine similarity, returns best article above threshold `0.30`.
+* Gracefully degrades if the file is missing — explicit caller-supplied SIIS still works.
+
+---
+
+## 4. Data Assets
+
+| File | Description |
+|---|---|
+| `data/deeplinks.json` | 578 verified Samsung deeplinks (`voiceassist://masked/act/...`) with descriptions and validation rules |
+| `data/siis_responses.json` | 20 official Samsung SIIS support articles paired with original queries |
+| `data/input.txt` | 20 official evaluation queries from the Theme 2 evaluation set |
+| `data/samples/sample_1.json` | Reference input/output pair illustrating the correct response schema |
+| `data/schema_reference.py` | Pydantic schema from Theme 2 spec — defines the exact output contract |
+| `data/dependencies.json` | Topological prerequisite edges for safety ordering |
+| `data/index/` | Pre-built BM25 + dense vector indexes for the deeplink catalog |

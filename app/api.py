@@ -7,8 +7,10 @@ from typing import Optional, Union
 
 import json
 from pathlib import Path
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.engine import Engine
@@ -16,6 +18,7 @@ from app.engine import Engine
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+DIST_DIR = STATIC_DIR / "dist"
 
 
 class SiisResponse(BaseModel):
@@ -39,13 +42,33 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="GalaxyResolve", version="1.0.0", lifespan=lifespan)
 
+# Allow Vite dev server (port 5173) to proxy API calls in development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount the React build output as static files
+if DIST_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
+
+
+def _spa_html() -> str:
+    """Return the React SPA index.html (built) or a fallback."""
+    spa = DIST_DIR / "index.html"
+    if spa.exists():
+        return spa.read_text(encoding="utf-8")
+    legacy = STATIC_DIR / "index.html"
+    if legacy.exists():
+        return legacy.read_text(encoding="utf-8")
+    return "<h1>Galaxy Resolve</h1><p>Run <code>npm run build</code> inside <code>frontend/</code> first.</p>"
+
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    html_file = STATIC_DIR / "index.html"
-    if html_file.exists():
-        return html_file.read_text(encoding="utf-8")
-    return "<h1>Galaxy Resolve API</h1><p>Visit /health or /docs</p>"
+    return _spa_html()
 
 
 from collections import deque
@@ -160,3 +183,14 @@ async def troubleshoot_stream(req: TroubleshootRequest):
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
+
+# ── SPA catch-all: serve index.html for all non-API GET routes ───────────────
+# This allows React Router to handle /demo, /features, /metrics, etc.
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+def spa_fallback(full_path: str):
+    # Only catch frontend routes — skip paths that look like API or asset calls
+    skip_prefixes = ("v1/", "health", "docs", "openapi", "assets/", "favicon")
+    if any(full_path.startswith(p) for p in skip_prefixes):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404)
+    return _spa_html()

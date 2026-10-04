@@ -5,6 +5,8 @@ import logging
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor
+
+from app.siis_store import SIISStore
 from typing import Any, Optional
 
 import numpy as np
@@ -73,6 +75,7 @@ class Engine:
         self.models = models or get_models(cfg)
         self.store = store
         self.catalog: Optional[Catalog] = None
+        self.siis_store: SIISStore = SIISStore()
         self._pool = ThreadPoolExecutor(max_workers=4)
 
     # ------------------------------------------------------------ lifecycle
@@ -82,6 +85,8 @@ class Engine:
         if self.store is None:
             dim = int(self.models.encode(["dim"]).shape[1])
             self.store = PlanStore(self.cfg.cache_db, dim)
+        # Load official SIIS knowledge base for auto-lookup when caller omits siis_response
+        self.siis_store.load(self.models)
         return self
 
     @property
@@ -105,8 +110,16 @@ class Engine:
                 return self._respond(plan.plan, t0, cache_hit=True, model=plan.model, similarity=sim)
         content = (siis or {}).get("content") or ""
         if not content.strip():
-            return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_siis_context")
-        
+            # Caller did not supply siis_response (optional per spec).
+            # Auto-lookup the best matching article from the official SIIS knowledge base.
+            auto = self.siis_store.lookup(query, self.models) if self.siis_store.ready else None
+            if auto:
+                siis = auto
+                content = auto["content"]
+                log.info("Auto-matched SIIS article %r for query %r", auto.get("title"), query[:60])
+            else:
+                return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_siis_context")
+
         from app.pipeline.mismatch import is_mismatched_article
         if is_mismatched_article(query, content, (siis or {}).get("title") or ""):
             return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_match")

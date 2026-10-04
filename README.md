@@ -19,6 +19,7 @@ When Galaxy device users encounter issues, their natural language descriptions a
 ### Core Highlights
 
 * **Sub-300ms Fast Path**: SQLite vector cache with slot guards (domain, symptom, trigger) and Cross-Encoder borderline verification serves repeated and paraphrased queries in $< 30\text{ ms}$.
+* **SIIS Store Auto-Matching**: When `siis_response` is omitted from API calls (e.g. custom user queries in web UI or tests), semantic vector similarity auto-selects the best-matching support article from the official dataset so custom queries work seamlessly.
 * **Zero URL Leaks**: Deterministic URL scrubbers and catalog verifiers ensure exactly 0 external web links leak into output; all actionable links map strictly to the verified 578-entry catalog (`voiceassist://masked/act/...`).
 * **100% Schema Conformance**: Validated against Pydantic schema contracts (`ContextDeeplinkResponse`), enforcing strict linguistic rules (goal phrasing, 2–3 word titles, 5–7 word descriptions starting with *"It will "*).
 * **Viterbi Scraper Degluing**: Dynamic programming word segmentation automatically repairs concatenated text from scraped support articles (e.g. `enteryourcurrentpin,passwordorpattern`).
@@ -158,6 +159,7 @@ Galaxy-Resolve/
 │   ├── engine.py            # Core pipeline orchestrator (fast/cold path)
 │   ├── llm.py               # Google Gemini client with OpenAI-compatible fallback
 │   ├── schema.py            # Official Pydantic response contract models
+│   ├── siis_store.py        # SIIS knowledge store auto-matching for custom/omitted queries
 │   ├── static/              # Embedded One UI visualizer console (HTML5/CSS3/JS)
 │   ├── cache/               # SQLite vector store, slot guards, caching logic
 │   └── pipeline/            # Extraction, grounding, degluing, ordering, deeplinks
