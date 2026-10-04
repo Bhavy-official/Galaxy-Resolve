@@ -78,7 +78,7 @@ class SIISStore:
             norms_k = np.linalg.norm(self._embeddings, axis=1, keepdims=True)
             sims = (self._embeddings @ qvec.T) / (norms_k * norms_q.T + 1e-9)  # (n, 1)
             best_idx = int(np.argmax(sims))
-            best_sim = float(sims[best_idx])
+            best_sim = float(np.squeeze(sims)[best_idx])
             if best_sim < threshold:
                 log.debug("SIISStore: no match above %.2f (best=%.3f) for %r", threshold, best_sim, query[:60])
                 return None

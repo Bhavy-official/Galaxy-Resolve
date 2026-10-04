@@ -161,6 +161,7 @@ def troubleshoot(req: TroubleshootRequest) -> JSONResponse:
 @app.post("/v1/troubleshoot/stream")
 async def troubleshoot_stream(req: TroubleshootRequest):
     async def event_generator():
+        t0 = time.perf_counter()
         yield f"data: {json.dumps({'stage': 'normalize', 'message': 'Normalizing query & extracting slots...'})}\n\n"
         siis = req.siis_response
         if isinstance(siis, str):
@@ -170,7 +171,20 @@ async def troubleshoot_stream(req: TroubleshootRequest):
         if hit:
             yield f"data: {json.dumps({'stage': 'cache_hit', 'message': 'Sub-300ms Cache Hit! Serving cached plan.'})}\n\n"
             plan, sim = hit
-            res = engine._respond(plan.plan, 0.0, cache_hit=True, model=plan.model, similarity=sim)
+            res = engine._respond(plan.plan, t0, cache_hit=True, model=plan.model, similarity=sim)
+            trace_id = str(uuid.uuid4())[:8]
+            _TRACES.append({
+                "id": trace_id,
+                "timestamp": time.time(),
+                "query": req.query,
+                "latency_ms": res.get("meta", {}).get("latency_ms", 0.0),
+                "cache_hit": True,
+                "model": plan.model,
+                "cost_usd": 0.0,
+                "fallback": None,
+                "actions_count": sum(len(c.get("actions", [])) for c in res.get("contexts", [])),
+            })
+            res.setdefault("meta", {})["trace_id"] = trace_id
             yield f"data: {json.dumps({'stage': 'completed', 'result': res})}\n\n"
             return
 
@@ -179,6 +193,20 @@ async def troubleshoot_stream(req: TroubleshootRequest):
         yield f"data: {json.dumps({'stage': 'deeplink_catalog', 'message': 'Matching target settings to catalog URIs...'})}\n\n"
         
         result = engine.troubleshoot(req.query, siis.model_dump() if siis else None)
+        meta = result.get("meta", {})
+        trace_id = str(uuid.uuid4())[:8]
+        _TRACES.append({
+            "id": trace_id,
+            "timestamp": time.time(),
+            "query": req.query,
+            "latency_ms": meta.get("latency_ms", 0.0),
+            "cache_hit": meta.get("cache_hit", False),
+            "model": meta.get("model", "unknown"),
+            "cost_usd": meta.get("cost_usd", 0.0),
+            "fallback": meta.get("fallback"),
+            "actions_count": sum(len(c.get("actions", [])) for c in result.get("contexts", [])),
+        })
+        result.setdefault("meta", {})["trace_id"] = trace_id
         yield f"data: {json.dumps({'stage': 'completed', 'result': result})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

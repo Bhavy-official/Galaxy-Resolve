@@ -551,32 +551,36 @@ export function DemoPage() {
       const decoder = new TextDecoder()
       let buffer = ''
       const actionCount = { n: 0 }
-      let lastMeta: TroubleshootResult['meta'] | null = null
+      let lastMetaFallback: string | undefined = undefined
 
-      while (true) {
+      let isDone = false
+      while (!isDone) {
         const { value, done } = await reader.read()
-        buffer += decoder.decode(value, { stream: !done })
+        if (done) {
+          isDone = true
+          break
+        }
+        buffer += decoder.decode(value, { stream: true })
         const blocks = buffer.split(/\r?\n\r?\n/)
         buffer = blocks.pop() ?? ''
-        blocks.forEach(b => {
+        for (const b of blocks) {
           const dataLine = b.split('\n').find(l => l.startsWith('data:'))
           if (dataLine) {
             try {
-              const parsed = JSON.parse(dataLine.slice(5).trim()) as Record<string, unknown>
-              if (parsed.stage === 'completed' && parsed.result) {
-                lastMeta = (parsed.result as TroubleshootResult).meta ?? null
+              const parsed = JSON.parse(dataLine.slice(5).trim())
+              if (parsed?.stage === 'completed' && parsed?.result?.meta?.fallback) {
+                lastMetaFallback = String(parsed.result.meta.fallback)
               }
             } catch { /* ignore */ }
           }
           recordSSEEvent(b, actionCount)
-        })
-        if (done) break
+        }
       }
       if (buffer.trim()) recordSSEEvent(buffer, { n: 0 })
 
       setStages(cur => cur.map(s => s.status === 'running' ? { ...s, status: 'done' } : s))
       if (actionCount.n === 0) {
-        const reason = lastMeta?.fallback
+        const reason = lastMetaFallback
         setMessage(
           reason === 'no_siis_context'
             ? 'No matching knowledge article found. Try one of the 20 official scenarios below.'
