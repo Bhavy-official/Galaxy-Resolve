@@ -18,6 +18,10 @@ DOMAIN_PATTERNS: dict[str, str] = {
     "camera": r"\b(camera|video|photos?|shutter)\b",
     "foldable": r"\b(fold|folds|foldable|inner screen|cover screen|hinge)\b",
     "apps": r"\b(apps?|application|stock price|quick assist)\b",
+    "audio": r"\b(audio|sound|volume|speaker|mic(rophone)?|earpiece|headphone|ringtone|silent|mute|dolby|hear)\b",
+    "storage": r"\b(storage|space|memory|sd card|microsd|disk|files? deleted)\b",
+    "battery": r"\b(battery|charg(e|er|ing)|power|drain|overheat(ing)?|hot)\b",
+    "biometrics": r"\b(fingerprint|face recognition|biometric|iris|unlock)\b",
 }
 
 SYMPTOM_PATTERNS: dict[str, str] = {
@@ -34,6 +38,7 @@ SYMPTOM_PATTERNS: dict[str, str] = {
     "transfer_fail": r"\b((can'?t|unable to|cannot|won'?t)\b.{0,40}\btransfer\w*|transfer\w* (can'?t|won'?t|fail\w*))\b",
     "connection": r"\b((can'?t|not|won'?t|unable to) connect|disconnect\w*|no internet|not responding)\b",
     "drain": r"\b(drain\w*|dies fast|battery (life|dies))\b",
+    "no_audio": r"\b((no|low|muffled|crackling|distorted|mute) (audio|sound|volume)|audio not (working|coming)|can'?t hear)\b",
 }
 
 TRIGGER_PATTERN = re.compile(

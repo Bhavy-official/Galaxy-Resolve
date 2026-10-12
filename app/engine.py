@@ -109,23 +109,34 @@ class Engine:
                 plan, sim = hit
                 return self._respond(plan.plan, t0, cache_hit=True, model=plan.model, similarity=sim)
         content = (siis or {}).get("content") or ""
+        synth_guidance = False
         if not content.strip():
             if siis is None:
                 # Caller did not supply siis_response (optional per spec).
-                # Auto-lookup the best matching article from the official SIIS knowledge base.
+                # 1. Try matching the official SIIS knowledge base
                 auto = self.siis_store.lookup(query, self.models) if self.siis_store.ready else None
                 if auto:
                     siis = auto
                     content = auto["content"]
                     log.info("Auto-matched SIIS article %r for query %r", auto.get("title"), query[:60])
+                elif self.use_llm:
+                    synth_content = self._synthesize_guidance(query)
+                    if synth_content:
+                        siis = {"title": f"{query.title()} troubleshooting", "content": synth_content}
+                        content = synth_content
+                        synth_guidance = True
+                        log.info("Synthesized troubleshooting guidance for free-form query %r", query[:60])
+                    else:
+                        return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_siis_context")
                 else:
                     return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_siis_context")
             else:
                 return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_siis_context")
 
-        from app.pipeline.mismatch import is_mismatched_article
-        if is_mismatched_article(query, content, (siis or {}).get("title") or ""):
-            return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_match")
+        if not synth_guidance:
+            from app.pipeline.mismatch import is_mismatched_article
+            if is_mismatched_article(query, content, (siis or {}).get("title") or ""):
+                return self._respond({"contexts": []}, t0, cache_hit=False, model="none", fallback="no_match")
 
         resp, info = self.generate(query, siis or {})
 
@@ -362,6 +373,28 @@ class Engine:
             ],
             "category": a.category,
         }
+
+    def _synthesize_guidance(self, query: str) -> Optional[str]:
+        """Generate structured Galaxy troubleshooting article when no reference SIIS article is supplied."""
+        if not self.use_llm or not self.llm.client:
+            return None
+        prompt = (
+            f"You are a Samsung Galaxy device troubleshooting expert. "
+            f"Write a step-by-step troubleshooting guide for the issue: '{query}'. "
+            f"Include 3-4 concrete actionable steps (such as Settings navigation paths, restarts, or checks). "
+            f"Write in plain text formatted with numbered steps like '1. Step one... 2. Step two...'"
+        )
+        try:
+            res = self.llm.client.chat.completions.create(
+                model=self.llm.model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=600,
+                temperature=0.2,
+            )
+            return res.choices[0].message.content.strip()
+        except Exception as exc:
+            log.warning("Failed to synthesize guidance for %r: %s", query[:50], exc)
+            return None
 
     # ------------------------------------------------------------ cache + response
     def _write_cache(self, query: str, resp: dict[str, Any], info: dict[str, Any]) -> None:

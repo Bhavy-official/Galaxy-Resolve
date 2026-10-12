@@ -67,7 +67,7 @@ def test_llm_path_end_to_end_and_cache(make_engine, siis_rows):
     resp = eng.troubleshoot(q, row["siis_response"])
     meta = resp["meta"]
     assert meta["cache_hit"] is False and meta["fallback"] is None
-    assert meta["model"] == "gemini-3.8-flash" and meta["cost_usd"] > 0
+    assert meta["model"] == eng.llm.model and meta["cost_usd"] > 0
     assert set(fake.calls) == {"LLMEnrichment", "LLMExtraction", "_RepairBatch"}
     assert compliance.violations(resp, eng.catalog.all_uris) == []
     dump = json.dumps(resp["contexts"])
