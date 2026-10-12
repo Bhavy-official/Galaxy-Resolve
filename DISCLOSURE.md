@@ -4,7 +4,7 @@
 
 # AI AND TOOL DISCLOSURE — GALAXY RESOLVE
 
-### Transparency Statement for the SRM Theme 2: Smart Guided Troubleshooting Engine Submission
+### Transparency Statement for Theme 2: Smart Guided Troubleshooting Engine Submission
 
 *This document discloses all AI tools, language models, third-party libraries, and external services used during the development of Galaxy Resolve.*
 
