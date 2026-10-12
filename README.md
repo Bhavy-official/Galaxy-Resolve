@@ -331,7 +331,7 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 ---
 
-Built for **SRM Institute of Science and Technology** — Theme 2: Smart Guided Troubleshooting Engine
+Built by **Team - Code Brewers SRM** — Theme 2: Smart Guided Troubleshooting Engine
 
 [HOW_TO_RUN.md](HOW_TO_RUN.md) &nbsp;|&nbsp; [ARCHITECTURE.md](ARCHITECTURE.md) &nbsp;|&nbsp; [API.md](API.md) &nbsp;|&nbsp; [Slide Deck](submission/SRM_Code_Brewers.pdf) &nbsp;|&nbsp; [Video Demo](https://drive.google.com/drive/folders/1mToZ4nGpqT2vQEok5F9KYxQHxP25UocI?usp=sharing)
 
